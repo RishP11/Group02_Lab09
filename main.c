@@ -58,7 +58,7 @@ void PORT_B_init( void )
     GPIO_PORTB_PUR_R |= (1 << 2) | (1 << 3) ;                                   // Pull-Up-Resistor Register
     GPIO_PORTB_AFSEL_R |= (1 << 2) | (1 << 3) ;                                 // Alternate function select for the PE0 and PE1
     GPIO_PORTB_PCTL_R = 0x00003300 ;                                  // Selecting the peripheral for the driving AFSEL
-    GPIO_PORTB_ODR_R = (1 << 3) ;
+    GPIO_PORTB_ODR_R |= (1 << 3) ;
 }
 
 void PORT_F_init( void )
@@ -82,5 +82,12 @@ void I2C_setup( void )
     I2C0_MCR_R = 0x10 ;                                         // Master Control Register
     I2C0_MTPR_R = TPR ;
     I2C0_MSA_R = 0x076 ;
-    I2C0_MCS_R = (1 << 1) | (1 << 2) ;//Control register
+    I2C0_MCS_R |= (1 << 1) | (1 << 2) ;//Control register
 }
+
+void I2C_Tx( uint8 data )
+{
+    I2C0_MDR_R = data ;
+    I2C0_MCS_R |= (1 << 0) ;
+}
+
