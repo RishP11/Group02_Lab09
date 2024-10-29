@@ -74,10 +74,13 @@ void PORT_F_init( void )
 void I2C_setup( void )
 {
     // Time period register value calculation
-    int TPR = (1.0 * CLOCK_HZ)
+    int SCL_HP = 6 ;
+    int SCL_LP = 4 ;
+    int SCL_CLK = 100000 ;
+    int TPR = (1.0 * CLOCK_HZ / (2 * (SCL_HP + SCL_LP) * SCL_CLK)) - 1 ;
 
     I2C0_MCR_R = 0x10 ;                                         // Master Control Register
-    I2C0_MTPR_R = 0
-
-
+    I2C0_MTPR_R = TPR ;
+    I2C0_MSA_R = 0x076 ;
+    I2C0_MCS_R = (1 << 1) | (1 << 2) ;//Control register
 }
