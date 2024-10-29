@@ -15,18 +15,29 @@ void CLK_enable( void );
 void PORT_A_init( void );
 void PORT_B_init( void );
 void PORT_F_init( void );
-void I2C_setup( void );
-void I2C_Tx( uint8 );
-uint8 I2C_Rx( void );
+void I2C0_setup( void );
+void I2C1_setup( void );
+void I2C_Tx( unsigned char );
+unsigned char I2C_Rx( void );
 
 int main(void)
 {
     CLK_enable();                                               // Enable all the required Clocks
-    PORT_F_init();                                              // Setup Port F to interface with LEDs and Switches
-    PORT_E_init();                                              // Setup Port E to interface with the UART
-    UART7_setup();                                              // Setup UART Module 07
+    PORT_A_init();
+    PORT_B_init();
+    PORT_F_init();
+    I2C0_setup();
+    I2C1_setup();
+
     while(1){
-        ;
+        while(I2C0_MCS_R & (1 << 0)) ;
+        I2C_Tx( 0xAA );
+        // Read the slave
+        while(!(I2C1_SCSR_R & (1 << 2)));
+        unsigned char data = I2C_Rx();
+        if (data == 0xAA){
+            GPIO_PORTF_DATA_R = 0x02 ;
+        }
     }
 }
 
@@ -71,7 +82,7 @@ void PORT_F_init( void )
     GPIO_PORTF_DATA_R = 0x00 ;                                  // Clearing previous data
 }
 
-void I2C_setup( void )
+void I2C0_setup( void )
 {
     // Time period register value calculation
     int SCL_HP = 6 ;
@@ -82,12 +93,31 @@ void I2C_setup( void )
     I2C0_MCR_R = 0x10 ;                                         // Master Control Register
     I2C0_MTPR_R = TPR ;
     I2C0_MSA_R = 0x076 ;
-    I2C0_MCS_R |= (1 << 1) | (1 << 2) ;//Control register
+
 }
 
-void I2C_Tx( uint8 data )
+void I2C1_setup( void )
+{
+    // Time period register value calculation
+//    int SCL_HP = 6 ;
+//    int SCL_LP = 4 ;
+//    int SCL_CLK = 100000 ;
+//    int TPR = (1.0 * CLOCK_HZ / (2 * (SCL_HP + SCL_LP) * SCL_CLK)) - 1 ;
+
+    I2C1_MCR_R |= (1 << 5)  ;                                         // Master Control Register
+    I2C1_SOAR_R = 0x3B ;
+    I2C1_SCSR_R |= (1 << 0) ;
+}
+
+
+void I2C_Tx( unsigned char data )
 {
     I2C0_MDR_R = data ;
-    I2C0_MCS_R |= (1 << 0) ;
+    I2C0_MCS_R |= (1 << 0) | (1 << 1) | (1 << 2) ;//Control register
 }
 
+unsigned char I2C_Rx( void )
+{
+    unsigned char rx_Data = I2C1_SDR_R ;
+    return rx_Data ;
+}
