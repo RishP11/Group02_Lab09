@@ -1,21 +1,27 @@
 /*
- * EE 690/615 Embedded Systems Lab No. 09
- * Group 02 :
- * 210020009 - Ganesh Panduranga Karamsetty
- * 210020036 - Rishabh Pomaje
- * Program to setup the I2C module on the muC and communicate with DAC (MCP-4725).
- * Using I2C module 3 <--> interfaced through Port D
+* EE 690/615 Embedded Systems Lab No. 09
+* Group 02 :
+* 210020009 - Ganesh Panduranga Karamsetty
+* 210020036 - Rishabh Pomaje
+* Program to setup the I2C module on the muC and communicate with DAC (MCP-4725).
+* Using I2C module 3 <--> interfaced through Port D
 */
 #define CLOCK_HZ    16000000
+#define DAC_ADDR    0x60
+#define WAVERES     500
+#define PI          3.14159265358979
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <math.h>
 #include "tm4c123gh6pm.h"
 
 void CLK_enable( void );
 void PORT_D_init( void );
 void I2C3_setup( void );
 void I2C_Tx( void );
+void sineWave( void ) ;
+void triangleWave( void ) ;
 
 int main(void)
 {
@@ -23,12 +29,7 @@ int main(void)
     PORT_D_init();
     I2C3_setup();
     while(1) {
-            int i = 0 ;
-            for (i = 0 ; i < 1000 ; i++){
-                ;
-            }
-
-        I2C_Tx();
+        sineWave();
     }
 }
 
@@ -64,32 +65,31 @@ void I2C3_setup( void )
     I2C3_MSA_R = 0xC0 ;
 }
 
-void I2C_Tx( void )
+void sineWave( void )
 {
+    int num_sample ;
+    uint16_t hexVal ;
+    while(1){
+        // If switch 02 is pressed then exit and go to the other function
+        // else continue with the same waveform
+        for (num_sample = 0; num_sample < WAVERES; num_sample++){
+            hexVal = 2048 + 2048  * (sin(2 * PI * 10 * num_sample / WAVERES)) ; // Value to send
 
-    I2C3_MDR_R = 0x0F;              // Send the first byte
-    I2C3_MCS_R = 0x03;              // Start + Run
+            I2C3_MDR_R = (hexVal >> 8) ;              // Send the first byte
+            I2C3_MCS_R = 0x03;              // Start + Run
 
-//    int i = 0 ;
-//    for (i = 0 ; i < 1000 ; i++){
-//        ;
-//    }
+            while(I2C3_MCS_R & 0x01);       // Wait until transmission completes
+            if (I2C3_MCS_R & 0x02) {        // Check for errors
+            I2C3_MCS_R = 0x04;          // Send Stop if error
+            return;
+            }
+            I2C3_MDR_R = (hexVal & 0xFF) ;              // Send the next byte
+            I2C3_MCS_R = 0x05;              // Run + Stop
 
-    while(I2C3_MCS_R & 0x01);       // Wait until transmission completes
-    if (I2C3_MCS_R & 0x02) {        // Check for errors
-        I2C3_MCS_R = 0x04;          // Send Stop if error
-        return;
-    }
-    I2C3_MDR_R = 0xFF;              // Send the next byte
-    I2C3_MCS_R = 0x05;              // Run + Stop
-
-//    for (i = 0 ; i < 1000 ; i++){
-//            ;
-//        }
-
-    while(I2C3_MCS_R & 0x01);       // Wait until transmission completes
-    if (I2C3_MCS_R & 0x02) {        // Check for errors
-        I2C3_MCS_R = 0x04;          // Send Stop if error
+            while(I2C3_MCS_R & 0x01);       // Wait until transmission completes
+            if (I2C3_MCS_R & 0x02) {        // Check for errors
+            I2C3_MCS_R = 0x04;          // Send Stop if error
+            }
+        }
     }
 }
-
