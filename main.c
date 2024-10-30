@@ -33,8 +33,8 @@ int main(void)
     PORT_D_init();
     I2C3_setup();
     while(1) {
-        // By default start with sine wave:
-        sineWave() ;
+        sawToothWave(3.3) ; // Pass Vmax argument
+//        sineWave() ;        // Uncomment for generating the sine wave
     }
 }
 
@@ -80,11 +80,6 @@ void sineWave( void )
     }
 
     while(1){
-        // If switch 02 is pressed then exit and go to the other function
-        if (GPIO_PORTF_DATA_R & (0x01)){
-            sawToothWave(3.3) ;
-        }
-        // else continue with the same waveform
         for (sample_idx = 0; sample_idx < WAVERES; sample_idx++){
             hexVal = sineTable[sample_idx] ;
             I2C3_MDR_R = (hexVal >> 8) ;                    // Send the first byte
@@ -108,11 +103,6 @@ void sawToothWave( float Vmax )
     uint16_t hexVal = 0 ;
     int i ;
     while(1){
-        // If switch 01 is pressed then exit and go to the other function
-        if (GPIO_PORTF_DATA_R & (0x10)){
-             sineWave() ;
-         }
-        // else continue with the same waveform
         for (i = 0; i < num_samples; i++){
             hexVal += 0x001 ;
             I2C3_MDR_R = (hexVal >> 8) ;                    // Send the first byte
