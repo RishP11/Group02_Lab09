@@ -10,6 +10,8 @@
 #define DAC_ADDR    0x60
 #define WAVERES     500
 #define PI          3.14159265358979
+#define maxRES      4096
+#define Vref        3.3
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -21,9 +23,10 @@ void PORT_D_init( void );
 void I2C3_setup( void );
 void I2C_Tx( void );
 void sineWave( void ) ;
-void triangleWave( void ) ;
+void sawToothWave( float ) ;
 
 uint16_t sineTable[WAVERES] ;
+uint16_t sawTable[maxRES] ;
 
 int main(void)
 {
@@ -31,7 +34,8 @@ int main(void)
     PORT_D_init();
     I2C3_setup();
     while(1) {
-        sineWave();
+//        sineWave();
+        sawToothWave( 2.5 ) ;
     }
 }
 
@@ -86,6 +90,38 @@ void sineWave( void )
             I2C3_MCS_R = 0x03;              // Start + Run
 
             while(I2C3_MCS_R & 0x01);       // Wait until transmission completes
+//            if (I2C3_MCS_R & 0x02) {        // Check for errors
+//            I2C3_MCS_R = 0x04;          // Send Stop if error
+//            return;
+//            }
+            I2C3_MDR_R = (hexVal & 0xFF) ;              // Send the next byte
+            I2C3_MCS_R = 0x05;              // Run + Stop
+
+            while(I2C3_MCS_R & 0x01);       // Wait until transmission completes
+            if (I2C3_MCS_R & 0x02) {        // Check for errors
+            I2C3_MCS_R = 0x04;          // Send Stop if error
+            }
+        }
+    }
+}
+
+void sawToothWave( float Vmax )
+{
+
+    int num_samples = (1.0 * maxRES * (Vmax / Vref)) ;
+
+    uint16_t hexVal = 0 ;
+    int i ;
+    while(1){
+        // If switch 02 is pressed then exit and go to the other function
+        // else continue with the same waveform
+        for (i = 0; i < num_samples; i++){
+//            hexVal = 2048 + 2048  * (sin(2 * PI * 10 * sample_idx / WAVERES)) ; // Value to send
+            hexVal += 0x001 ;
+            I2C3_MDR_R = (hexVal >> 8) ;              // Send the first byte
+            I2C3_MCS_R = 0x03;              // Start + Run
+
+            while(I2C3_MCS_R & 0x01);       // Wait until transmission completes
             if (I2C3_MCS_R & 0x02) {        // Check for errors
             I2C3_MCS_R = 0x04;          // Send Stop if error
             return;
@@ -98,5 +134,6 @@ void sineWave( void )
             I2C3_MCS_R = 0x04;          // Send Stop if error
             }
         }
+        hexVal = 0 ;
     }
 }
