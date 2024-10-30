@@ -23,6 +23,8 @@ void I2C_Tx( void );
 void sineWave( void ) ;
 void triangleWave( void ) ;
 
+uint16_t sineTable[WAVERES] ;
+
 int main(void)
 {
     CLK_enable();                                               // Enable all the required Clocks
@@ -67,14 +69,19 @@ void I2C3_setup( void )
 
 void sineWave( void )
 {
-    int num_sample ;
+    int sample_idx ;
     uint16_t hexVal ;
+
+    for (sample_idx = 0; sample_idx < WAVERES; sample_idx++){
+        sineTable[sample_idx] = 2048 + 2048  * (sin(2 * PI * 10 * sample_idx / WAVERES)) ;
+    }
+
     while(1){
         // If switch 02 is pressed then exit and go to the other function
         // else continue with the same waveform
-        for (num_sample = 0; num_sample < WAVERES; num_sample++){
-            hexVal = 2048 + 2048  * (sin(2 * PI * 10 * num_sample / WAVERES)) ; // Value to send
-
+        for (sample_idx = 0; sample_idx < WAVERES; sample_idx++){
+//            hexVal = 2048 + 2048  * (sin(2 * PI * 10 * sample_idx / WAVERES)) ; // Value to send
+            hexVal = sineTable[sample_idx] ;
             I2C3_MDR_R = (hexVal >> 8) ;              // Send the first byte
             I2C3_MCS_R = 0x03;              // Start + Run
 
